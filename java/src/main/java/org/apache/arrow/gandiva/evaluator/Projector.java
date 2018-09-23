@@ -152,6 +152,66 @@ public class Projector {
 
     JniWrapper.getInstance().evaluateProjector(this.moduleId, numRows,
             bufAddrs, bufSizes,
+            0L, 0L, 0,
+            outAddrs, outSizes);
+  }
+
+
+  /**
+   * Invoke this function to evaluate a set of expressions against a recordBatch.
+   *
+   * @param recordBatch Record batch including the data
+   * @param outColumns Result of applying the project on the data
+   */
+  public void evaluate(ArrowRecordBatch recordBatch, SelectionVector selectionVector, 
+                       List<ValueVector> outColumns) throws GandivaException {
+    if (this.closed) {
+      throw new EvaluatorClosedException();
+    }
+
+    if (numExprs != outColumns.size()) {
+      logger.info("Expected " + numExprs + " columns, got " + outColumns.size());
+      throw new GandivaException("Incorrect number of columns for the output vector");
+    }
+
+    List<ArrowBuf> buffers = recordBatch.getBuffers();
+    List<ArrowBuffer> buffersLayout = recordBatch.getBuffersLayout();
+
+    long[] bufAddrs = new long[buffers.size()];
+    long[] bufSizes = new long[buffers.size()];
+
+    int idx = 0;
+    for (ArrowBuf buf : buffers) {
+      bufAddrs[idx++] = buf.memoryAddress();
+    }
+
+    idx = 0;
+    for (ArrowBuffer bufLayout : buffersLayout) {
+      bufSizes[idx++] = bufLayout.getSize();
+    }
+
+    int numRows = recordBatch.getLength();
+    long[] outAddrs = new long[2 * outColumns.size()];
+    long[] outSizes = new long[2 * outColumns.size()];
+    idx = 0;
+    for (ValueVector valueVector : outColumns) {
+      if (!(valueVector instanceof FixedWidthVector)) {
+        throw new UnsupportedTypeException("Unsupported value vector type");
+      }
+
+      outAddrs[idx] = valueVector.getValidityBuffer().memoryAddress();
+      outSizes[idx++] = valueVector.getValidityBuffer().capacity();
+      outAddrs[idx] = valueVector.getDataBuffer().memoryAddress();
+      outSizes[idx++] = valueVector.getDataBuffer().capacity();
+
+      valueVector.setValueCount(numRows);
+    }
+
+    JniWrapper.getInstance().evaluateProjector(this.moduleId, numRows,
+            bufAddrs, bufSizes,
+            selectionVector.getBuffer().memoryAddress(),
+            selectionVector.getBuffer().capacity(),
+            selectionVector.getType().getNumber(),
             outAddrs, outSizes);
   }
 

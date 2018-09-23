@@ -47,9 +47,16 @@ class LLVMGenerator {
   /// represents an expression tree
   Status Build(const ExpressionVector &exprs);
 
+  Status BuildForProject(const ExpressionVector &exprs);
   /// \brief Execute the built expression against the provided arguments.
   Status Execute(const arrow::RecordBatch &record_batch,
                  const ArrayDataVector &output_vector);
+
+  /// \brief Execute the built expression against the provided arguments in various modes.
+  Status Execute(const arrow::RecordBatch &record_batch,
+                 const ArrayDataVector &output_vector,
+                 const arrow::Buffer &selection_vector,
+                 const int &mode);
 
   LLVMTypes &types() { return *types_; }
   llvm::Module *module() { return engine_->module(); }
@@ -127,6 +134,8 @@ class LLVMGenerator {
   // 'output'.
   Status Add(const ExpressionPtr expr, const FieldDescriptorPtr output);
 
+  Status AddForProject(const ExpressionPtr expr, const FieldDescriptorPtr output);
+
   /// Generate code to load the vector at specified index in the 'arg_addrs' array.
   llvm::Value *LoadVectorAtIndex(llvm::Value *arg_addrs, int idx,
                                  const std::string &name);
@@ -141,6 +150,9 @@ class LLVMGenerator {
   llvm::Value *GetOffsetsReference(llvm::Value *arg_addrs, int idx, FieldPtr field);
 
   /// Generate code for the value array of one expression.
+  Status CodeGenExprValue(DexPtr value_expr, FieldDescriptorPtr output, int suffix_idx,
+                          llvm::Function **fn, int &mode);
+
   Status CodeGenExprValue(DexPtr value_expr, FieldDescriptorPtr output, int suffix_idx,
                           llvm::Function **fn);
 

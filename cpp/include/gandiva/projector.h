@@ -74,6 +74,16 @@ class Projector {
   ///                 populated by Evaluate.
   Status Evaluate(const arrow::RecordBatch &batch, const ArrayDataVector &output);
 
+  /// Evaluate the specified record batch, and populate the output arrays. The output
+  /// arrays of sufficient capacity must be allocated by the caller.
+  ///
+  /// \param[in] : batch the record batch. schema should be the same as the one in 'Make'
+  /// \param[in/out]: vector of arrays, the arrays are allocated by the caller and
+  ///                 populated by Evaluate.
+  /// \param[mode] : mode
+  /// \param[sel] : sel
+  Status Evaluate(const arrow::RecordBatch &batch, const ArrayDataVector &output, const arrow::Buffer &selection_vector, const int &mode);
+
  private:
   Projector(std::unique_ptr<LLVMGenerator> llvm_generator, SchemaPtr schema,
             const FieldVector &output_fields, std::shared_ptr<Configuration>);

@@ -72,7 +72,7 @@ Status Projector::Make(SchemaPtr schema, const ExpressionVector &exprs,
     GANDIVA_RETURN_NOT_OK(status);
   }
 
-  status = llvm_gen->Build(exprs);
+  status = llvm_gen->BuildForProject(exprs);
   GANDIVA_RETURN_NOT_OK(status);
 
   // save the output field types. Used for validation at Evaluate() time.
@@ -114,6 +114,36 @@ Status Projector::Evaluate(const arrow::RecordBatch &batch,
     ++idx;
   }
   return llvm_generator_->Execute(batch, output_data_vecs);
+}
+
+Status Projector::Evaluate(const arrow::RecordBatch &batch,
+                           const ArrayDataVector &output_data_vecs,
+                           const arrow::Buffer &selection_vector,
+                           const int &mode) {
+  Status status = ValidateEvaluateArgsCommon(batch);
+  GANDIVA_RETURN_NOT_OK(status);
+
+  if (output_data_vecs.size() != output_fields_.size()) {
+    std::stringstream ss;
+    ss << "number of buffers for output_data_vecs is " << output_data_vecs.size()
+       << ", expected " << output_fields_.size();
+    return Status::Invalid(ss.str());
+  }
+
+  int idx = 0;
+  for (auto &array_data : output_data_vecs) {
+    if (array_data == nullptr) {
+      std::stringstream ss;
+      ss << "array for output field " << output_fields_[idx]->name() << "is null.";
+      return Status::Invalid(ss.str());
+    }
+
+    Status status =
+        ValidateArrayDataCapacity(*array_data, *(output_fields_[idx]), batch.num_rows());
+    GANDIVA_RETURN_NOT_OK(status);
+    ++idx;
+  }
+  return llvm_generator_->Execute(batch, output_data_vecs, selection_vector, mode);
 }
 
 Status Projector::Evaluate(const arrow::RecordBatch &batch, arrow::MemoryPool *pool,
