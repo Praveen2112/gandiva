@@ -118,8 +118,7 @@ Status Projector::Evaluate(const arrow::RecordBatch &batch,
 
 Status Projector::Evaluate(const arrow::RecordBatch &batch,
                            const ArrayDataVector &output_data_vecs,
-                           const arrow::Buffer &selection_vector,
-                           const int &mode) {
+                           const arrow::Buffer &selection_vector, const int &mode) {
   Status status = ValidateEvaluateArgsCommon(batch);
   GANDIVA_RETURN_NOT_OK(status);
 

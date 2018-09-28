@@ -22,10 +22,11 @@ namespace gandiva {
 
 using EvalFunc = int (*)(uint8_t **buffers, uint8_t **local_bitmaps, int record_count);
 
-using EvalFunc_Sel_Vec_16 = int (*)(uint8_t **buffers, uint8_t **local_bitmaps, uint8_t *selection_vector, int record_count);
+using EvalFunc_Sel_Vec_16 = int (*)(uint8_t **buffers, uint8_t **local_bitmaps,
+                                    uint8_t *selection_vector, int record_count);
 
-using EvalFunc_Sel_Vec_32 = int (*)(uint8_t **buffers, uint8_t **local_bitmaps, uint8_t *selection_vector, int record_count);
-
+using EvalFunc_Sel_Vec_32 = int (*)(uint8_t **buffers, uint8_t **local_bitmaps,
+                                    uint8_t *selection_vector, int record_count);
 
 /// \brief Tracks the compiled state for one expression.
 class CompiledExpr {
@@ -38,14 +39,14 @@ class CompiledExpr {
         jit_function_(NULL) {}
 
   CompiledExpr(ValueValidityPairPtr value_validity, FieldDescriptorPtr output,
-               llvm::Function *ir_function, llvm::Function *ir_function_sel_vec_16, llvm::Function *ir_function_sel_vec_32)
+               llvm::Function *ir_function, llvm::Function *ir_function_sel_vec_16,
+               llvm::Function *ir_function_sel_vec_32)
       : value_validity_(value_validity),
         output_(output),
         ir_function_(ir_function),
         ir_function_sel_vec_16_(ir_function_sel_vec_16),
         ir_function_sel_vec_32_(ir_function_sel_vec_32),
         jit_function_(NULL) {}
-
 
   ValueValidityPairPtr value_validity() const { return value_validity_; }
 
@@ -65,9 +66,13 @@ class CompiledExpr {
 
   void set_jit_function(EvalFunc jit_function) { jit_function_ = jit_function; }
 
-  void set_jit_function_sel_vec_16(EvalFunc_Sel_Vec_16 jit_function_sel_vec_16) { jit_function_sel_vec_16_ = jit_function_sel_vec_16; }
+  void set_jit_function_sel_vec_16(EvalFunc_Sel_Vec_16 jit_function_sel_vec_16) {
+    jit_function_sel_vec_16_ = jit_function_sel_vec_16;
+  }
 
-  void set_jit_function_sel_vec_32(EvalFunc_Sel_Vec_32 jit_function_sel_vec_32) { jit_function_sel_vec_32_ = jit_function_sel_vec_32; }
+  void set_jit_function_sel_vec_32(EvalFunc_Sel_Vec_32 jit_function_sel_vec_32) {
+    jit_function_sel_vec_32_ = jit_function_sel_vec_32;
+  }
 
  private:
   // value & validities for the expression tree (root)

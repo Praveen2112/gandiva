@@ -59,7 +59,8 @@ Status LLVMGenerator::Add(const ExpressionPtr expr, const FieldDescriptorPtr out
   // Generate the IR function for the decomposed expression.
   llvm::Function *ir_function = nullptr;
   int mode = 0;
-  status = CodeGenExprValue(value_validity->value_expr(), output, idx, &ir_function, mode);
+  status =
+      CodeGenExprValue(value_validity->value_expr(), output, idx, &ir_function, mode);
   GANDIVA_RETURN_NOT_OK(status);
 
   std::unique_ptr<CompiledExpr> compiled_expr(
@@ -68,7 +69,8 @@ Status LLVMGenerator::Add(const ExpressionPtr expr, const FieldDescriptorPtr out
   return Status::OK();
 }
 
-Status LLVMGenerator::AddForProject(const ExpressionPtr expr, const FieldDescriptorPtr output) {
+Status LLVMGenerator::AddForProject(const ExpressionPtr expr,
+                                    const FieldDescriptorPtr output) {
   int idx = compiled_exprs_.size();
 
   // decompose the expression to separate out value and validities.
@@ -79,22 +81,25 @@ Status LLVMGenerator::AddForProject(const ExpressionPtr expr, const FieldDescrip
   int mode = 0;
   // Generate the IR function for the decomposed expression.
   llvm::Function *ir_function = nullptr;
-  status = CodeGenExprValue(value_validity->value_expr(), output, idx, &ir_function, mode);
+  status =
+      CodeGenExprValue(value_validity->value_expr(), output, idx, &ir_function, mode);
   GANDIVA_RETURN_NOT_OK(status);
-  
+
   mode = 1;
   llvm::Function *ir_function_sel_vec_16 = nullptr;
-  status = CodeGenExprValue(value_validity->value_expr(), output, idx, &ir_function_sel_vec_16, mode);
+  status = CodeGenExprValue(value_validity->value_expr(), output, idx,
+                            &ir_function_sel_vec_16, mode);
   GANDIVA_RETURN_NOT_OK(status);
 
   mode = 2;
   llvm::Function *ir_function_sel_vec_32 = nullptr;
-  status = CodeGenExprValue(value_validity->value_expr(), output, idx, &ir_function_sel_vec_32, mode);
+  status = CodeGenExprValue(value_validity->value_expr(), output, idx,
+                            &ir_function_sel_vec_32, mode);
   GANDIVA_RETURN_NOT_OK(status);
 
-
   std::unique_ptr<CompiledExpr> compiled_expr(
-      new CompiledExpr(value_validity, output, ir_function, ir_function_sel_vec_16, ir_function_sel_vec_32));
+      new CompiledExpr(value_validity, output, ir_function, ir_function_sel_vec_16,
+                       ir_function_sel_vec_32));
   compiled_exprs_.push_back(std::move(compiled_expr));
   return Status::OK();
 }
@@ -140,15 +145,16 @@ Status LLVMGenerator::BuildForProject(const ExpressionVector &exprs) {
     compiled_expr->set_jit_function(fn);
 
     llvm::Function *ir_func_sel_vec_16 = compiled_expr->ir_function_sel_vec_16();
-    EvalFunc_Sel_Vec_16 fn_sel_vec_16 = reinterpret_cast<EvalFunc_Sel_Vec_16>(engine_->CompiledFunction(ir_func_sel_vec_16));
+    EvalFunc_Sel_Vec_16 fn_sel_vec_16 = reinterpret_cast<EvalFunc_Sel_Vec_16>(
+        engine_->CompiledFunction(ir_func_sel_vec_16));
     compiled_expr->set_jit_function_sel_vec_16(fn_sel_vec_16);
 
     llvm::Function *ir_func_sel_vec_32 = compiled_expr->ir_function_sel_vec_32();
-    EvalFunc_Sel_Vec_32 fn_sel_vec_32 = reinterpret_cast<EvalFunc_Sel_Vec_32>(engine_->CompiledFunction(ir_func_sel_vec_32));
+    EvalFunc_Sel_Vec_32 fn_sel_vec_32 = reinterpret_cast<EvalFunc_Sel_Vec_32>(
+        engine_->CompiledFunction(ir_func_sel_vec_32));
     compiled_expr->set_jit_function_sel_vec_32(fn_sel_vec_32);
-
   }
-  
+
   return Status::OK();
 }
 
@@ -162,8 +168,7 @@ Status LLVMGenerator::Execute(const arrow::RecordBatch &record_batch,
 /// Execute the compiled module against the provided vectors.
 Status LLVMGenerator::Execute(const arrow::RecordBatch &record_batch,
                               const ArrayDataVector &output_vector,
-                              const arrow::Buffer &selection_vector,
-                              const int &mode) {
+                              const arrow::Buffer &selection_vector, const int &mode) {
   DCHECK_GT(record_batch.num_rows(), 0);
 
   auto eval_batch = annotator_.PrepareEvalBatch(record_batch, output_vector);
@@ -172,27 +177,27 @@ Status LLVMGenerator::Execute(const arrow::RecordBatch &record_batch,
   for (auto &compiled_expr : compiled_exprs_) {
     // generate data/offset vectors.
     switch (mode) {
-        case 0:{
-            EvalFunc jit_function = compiled_expr->jit_function();
-            jit_function(eval_batch->GetBufferArray(), eval_batch->GetLocalBitMapArray(),
-                 record_batch.num_rows());
-            }
-            break;
-        case 1:{
-            EvalFunc_Sel_Vec_16 jit_function = compiled_expr->jit_function_sel_vec_16();
-            jit_function(eval_batch->GetBufferArray(), eval_batch->GetLocalBitMapArray(),
-                 const_cast<uint8_t *>(selection_vector.data()), record_batch.num_rows());
-            }
-            break;
-        case 2:{
-            EvalFunc_Sel_Vec_32 jit_function = compiled_expr->jit_function_sel_vec_32();
-            jit_function(eval_batch->GetBufferArray(), eval_batch->GetLocalBitMapArray(),
-                 const_cast<uint8_t *>(selection_vector.data()), record_batch.num_rows());
-            }
-            break;
-        default:{
-            std::cerr << "Unknown mode";}
-        }
+      case 0: {
+        EvalFunc jit_function = compiled_expr->jit_function();
+        jit_function(eval_batch->GetBufferArray(), eval_batch->GetLocalBitMapArray(),
+                     record_batch.num_rows());
+      } break;
+      case 1: {
+        EvalFunc_Sel_Vec_16 jit_function = compiled_expr->jit_function_sel_vec_16();
+        jit_function(eval_batch->GetBufferArray(), eval_batch->GetLocalBitMapArray(),
+                     const_cast<uint8_t *>(selection_vector.data()),
+                     record_batch.num_rows());
+      } break;
+      case 2: {
+        EvalFunc_Sel_Vec_32 jit_function = compiled_expr->jit_function_sel_vec_32();
+        jit_function(eval_batch->GetBufferArray(), eval_batch->GetLocalBitMapArray(),
+                     const_cast<uint8_t *>(selection_vector.data()),
+                     record_batch.num_rows());
+      } break;
+      default: {
+        std::cerr << "Unknown mode";
+      }
+    }
     // generate validity vectors.
     ComputeBitMapsForExpr(*compiled_expr, *eval_batch);
   }
@@ -247,11 +252,10 @@ llvm::Value *LLVMGenerator::GetLocalBitMapReference(llvm::Value *arg_bitmaps, in
 }
 
 Status LLVMGenerator::CodeGenExprValue(DexPtr value_expr, FieldDescriptorPtr output,
-                                       int suffix_idx, llvm::Function **fn)
-{ 
+                                       int suffix_idx, llvm::Function **fn) {
   int id = 0;
   return CodeGenExprValue(value_expr, output, suffix_idx, fn, id);
-} 
+}
 /// \brief Generate code for one expression.
 
 // Sample IR code for "c1:int + c2:int"
@@ -313,8 +317,7 @@ Status LLVMGenerator::CodeGenExprValue(DexPtr value_expr, FieldDescriptorPtr out
 
   if (mode == 1) {
     arguments.push_back(types_->ptr_type(types_->i16_type()));
-  }
-  else if (mode == 2) {
+  } else if (mode == 2) {
     arguments.push_back(types_->i32_ptr_type());
   }
   arguments.push_back(types_->i32_type());
@@ -322,7 +325,8 @@ Status LLVMGenerator::CodeGenExprValue(DexPtr value_expr, FieldDescriptorPtr out
       llvm::FunctionType::get(types_->i32_type(), arguments, false /*isVarArg*/);
 
   // Create fn
-  std::string func_name = "expr_" + std::to_string(suffix_idx) + "_" + std::to_string(mode);
+  std::string func_name =
+      "expr_" + std::to_string(suffix_idx) + "_" + std::to_string(mode);
   engine_->AddFunctionToCompile(func_name);
   *fn = llvm::Function::Create(prototype, llvm::GlobalValue::ExternalLinkage, func_name,
                                module());
@@ -363,7 +367,10 @@ Status LLVMGenerator::CodeGenExprValue(DexPtr value_expr, FieldDescriptorPtr out
   llvm::PHINode *loop_var = builder.CreatePHI(types_->i32_type(), 2, "loop_var");
   llvm::Value *position_var = loop_var;
   if (mode > 0) {
-     position_var = builder.CreateIntCast(builder.CreateLoad(builder.CreateGEP(arg_selection_vector, loop_var), "uncasted_position_var"), types_->i32_type(), true, "position_var");
+    position_var = builder.CreateIntCast(
+        builder.CreateLoad(builder.CreateGEP(arg_selection_vector, loop_var),
+                           "uncasted_position_var"),
+        types_->i32_type(), true, "position_var");
   }
   // The visitor can add code to both the entry/loop blocks.
   Visitor visitor(this, *fn, loop_entry, arg_addrs, arg_local_bitmaps, position_var);

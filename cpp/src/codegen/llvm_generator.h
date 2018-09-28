@@ -55,8 +55,7 @@ class LLVMGenerator {
   /// \brief Execute the built expression against the provided arguments in various modes.
   Status Execute(const arrow::RecordBatch &record_batch,
                  const ArrayDataVector &output_vector,
-                 const arrow::Buffer &selection_vector,
-                 const int &mode);
+                 const arrow::Buffer &selection_vector, const int &mode);
 
   LLVMTypes &types() { return *types_; }
   llvm::Module *module() { return engine_->module(); }

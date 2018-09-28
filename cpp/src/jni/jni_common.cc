@@ -647,8 +647,8 @@ Java_org_apache_arrow_gandiva_evaluator_JniWrapper_evaluateProjector(
     if (!status.ok()) {
       break;
     }
-    auto selectionVector = std::shared_ptr<arrow::Buffer>(
-        new arrow::Buffer(reinterpret_cast<uint8_t *>(selection_vector_addrs), selection_vector_size));
+    auto selectionVector = std::shared_ptr<arrow::Buffer>(new arrow::Buffer(
+        reinterpret_cast<uint8_t *>(selection_vector_addrs), selection_vector_size));
 
     status = holder->projector()->Evaluate(*in_batch, output, *selectionVector, mode);
   } while (0);

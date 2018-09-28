@@ -82,7 +82,8 @@ class Projector {
   ///                 populated by Evaluate.
   /// \param[mode] : mode
   /// \param[sel] : sel
-  Status Evaluate(const arrow::RecordBatch &batch, const ArrayDataVector &output, const arrow::Buffer &selection_vector, const int &mode);
+  Status Evaluate(const arrow::RecordBatch &batch, const ArrayDataVector &output,
+                  const arrow::Buffer &selection_vector, const int &mode);
 
  private:
   Projector(std::unique_ptr<LLVMGenerator> llvm_generator, SchemaPtr schema,
